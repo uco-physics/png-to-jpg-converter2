@@ -12,7 +12,7 @@
             padding: 20px;
             text-align: center;
         }
-        input, button, select {
+        input, button, select, label {
             margin: 10px;
             padding: 5px;
         }
@@ -31,17 +31,19 @@
     </style>
 </head>
 <body>
-    <!-- 既存のPNG to JPGコンバーター -->
+    <!-- PNG to JPGコンバーター -->
     <div class="section">
         <h2>PNG to JPG Converter</h2>
         <input type="file" id="imageInput" accept="image/png">
+        <br>
+        <label><input type="checkbox" id="keepFilenamePng"> Keep original filename</label>
         <br>
         <button onclick="convertPngToJpg()">Convert to JPG</button>
         <br>
         <a id="downloadLink" style="display: none;">Download JPG</a>
     </div>
 
-    <!-- 新しい複数形式変換セクション -->
+    <!-- 複数形式変換セクション -->
     <div class="section">
         <h2>Multi-Format Image Converter</h2>
         <input type="file" id="multiImageInput" accept="image/png,image/jpeg,image/webp,image/bmp">
@@ -54,6 +56,8 @@
             <option value="image/bmp">BMP</option>
         </select>
         <br>
+        <label><input type="checkbox" id="keepFilenameMulti"> Keep original filename</label>
+        <br>
         <button onclick="convertMultiFormat()">Convert Image</button>
         <br>
         <a id="multiDownloadLink" style="display: none;">Download Converted Image</a>
@@ -62,9 +66,10 @@
     <canvas id="canvas"></canvas>
 
     <script>
-        // PNG to JPG変換（既存機能）
+        // PNG to JPG変換
         function convertPngToJpg() {
             const input = document.getElementById('imageInput');
+            const keepFilename = document.getElementById('keepFilenamePng').checked;
             const canvas = document.getElementById('canvas');
             const downloadLink = document.getElementById('downloadLink');
 
@@ -82,9 +87,14 @@
                 
                 const jpgDataUrl = canvas.toDataURL('image/jpeg', 0.9);
                 downloadLink.href = jpgDataUrl;
-                downloadLink.download = 'converted.jpg';
+                
+                // ファイル名設定
+                const filename = keepFilename 
+                    ? input.files[0].name.replace(/\.[^/.]+$/, '') + '.jpg'
+                    : 'converted.jpg';
+                downloadLink.download = filename;
                 downloadLink.style.display = 'inline';
-                downloadLink.textContent = 'Download JPG';
+                downloadLink.textContent = `Download ${filename}`;
             };
 
             img.src = URL.createObjectURL(input.files[0]);
@@ -94,6 +104,7 @@
         function convertMultiFormat() {
             const input = document.getElementById('multiImageInput');
             const outputFormat = document.getElementById('outputFormat').value;
+            const keepFilename = document.getElementById('keepFilenameMulti').checked;
             const canvas = document.getElementById('canvas');
             const downloadLink = document.getElementById('multiDownloadLink');
 
@@ -112,7 +123,7 @@
                 // 出力形式に応じた拡張子と品質設定
                 let extension = '';
                 let mimeType = outputFormat;
-                let quality = 0.9; // JPGとWEBP用のデフォルト品質
+                let quality = 0.9;
 
                 switch (outputFormat) {
                     case 'image/jpeg':
@@ -120,13 +131,12 @@
                         break;
                     case 'image/png':
                         extension = 'png';
-                        quality = undefined; // PNGは品質設定不要
+                        quality = undefined;
                         break;
                     case 'image/webp':
                         extension = 'webp';
                         break;
                     case 'image/bmp':
-                        // BMPはCanvas APIで直接サポートされないのでPNGとして処理
                         mimeType = 'image/png';
                         extension = 'bmp';
                         quality = undefined;
@@ -136,9 +146,14 @@
                 // 画像データを生成
                 const dataUrl = canvas.toDataURL(mimeType, quality);
                 downloadLink.href = dataUrl;
-                downloadLink.download = `converted.${extension}`;
+
+                // ファイル名設定
+                const filename = keepFilename 
+                    ? input.files[0].name.replace(/\.[^/.]+$/, '') + '.' + extension
+                    : `converted.${extension}`;
+                downloadLink.download = filename;
                 downloadLink.style.display = 'inline';
-                downloadLink.textContent = `Download ${extension.toUpperCase()}`;
+                downloadLink.textContent = `Download ${filename}`;
             };
 
             img.src = URL.createObjectURL(input.files[0]);

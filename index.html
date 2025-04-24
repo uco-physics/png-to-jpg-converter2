@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PNG to JPG Converter</title>
+    <title>Image Converter</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,26 +12,58 @@
             padding: 20px;
             text-align: center;
         }
-        input, button {
+        input, button, select {
             margin: 10px;
             padding: 5px;
         }
         canvas {
             display: none;
         }
+        .section {
+            margin: 40px 0;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        h2 {
+            margin-top: 0;
+        }
     </style>
 </head>
 <body>
-    <h1>PNG to JPG Converter</h1>
-    <input type="file" id="imageInput" accept="image/png">
-    <br>
-    <button onclick="convertImage()">Convert to JPG</button>
-    <br>
-    <a id="downloadLink" style="display: none;">Download JPG</a>
+    <!-- 既存のPNG to JPGコンバーター -->
+    <div class="section">
+        <h2>PNG to JPG Converter</h2>
+        <input type="file" id="imageInput" accept="image/png">
+        <br>
+        <button onclick="convertPngToJpg()">Convert to JPG</button>
+        <br>
+        <a id="downloadLink" style="display: none;">Download JPG</a>
+    </div>
+
+    <!-- 新しい複数形式変換セクション -->
+    <div class="section">
+        <h2>Multi-Format Image Converter</h2>
+        <input type="file" id="multiImageInput" accept="image/png,image/jpeg,image/webp,image/bmp">
+        <br>
+        <label for="outputFormat">Output Format: </label>
+        <select id="outputFormat">
+            <option value="image/jpeg">JPG</option>
+            <option value="image/png">PNG</option>
+            <option value="image/webp">WEBP</option>
+            <option value="image/bmp">BMP</option>
+        </select>
+        <br>
+        <button onclick="convertMultiFormat()">Convert Image</button>
+        <br>
+        <a id="multiDownloadLink" style="display: none;">Download Converted Image</a>
+    </div>
+
     <canvas id="canvas"></canvas>
 
     <script>
-        function convertImage() {
+        // PNG to JPG変換（既存機能）
+        function convertPngToJpg() {
             const input = document.getElementById('imageInput');
             const canvas = document.getElementById('canvas');
             const downloadLink = document.getElementById('downloadLink');
@@ -48,12 +80,65 @@
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
                 
-                // Convert to JPG
                 const jpgDataUrl = canvas.toDataURL('image/jpeg', 0.9);
                 downloadLink.href = jpgDataUrl;
                 downloadLink.download = 'converted.jpg';
                 downloadLink.style.display = 'inline';
                 downloadLink.textContent = 'Download JPG';
+            };
+
+            img.src = URL.createObjectURL(input.files[0]);
+        }
+
+        // 複数形式変換
+        function convertMultiFormat() {
+            const input = document.getElementById('multiImageInput');
+            const outputFormat = document.getElementById('outputFormat').value;
+            const canvas = document.getElementById('canvas');
+            const downloadLink = document.getElementById('multiDownloadLink');
+
+            if (!input.files[0]) {
+                alert('Please select an image.');
+                return;
+            }
+
+            const img = new Image();
+            img.onload = function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+
+                // 出力形式に応じた拡張子と品質設定
+                let extension = '';
+                let mimeType = outputFormat;
+                let quality = 0.9; // JPGとWEBP用のデフォルト品質
+
+                switch (outputFormat) {
+                    case 'image/jpeg':
+                        extension = 'jpg';
+                        break;
+                    case 'image/png':
+                        extension = 'png';
+                        quality = undefined; // PNGは品質設定不要
+                        break;
+                    case 'image/webp':
+                        extension = 'webp';
+                        break;
+                    case 'image/bmp':
+                        // BMPはCanvas APIで直接サポートされないのでPNGとして処理
+                        mimeType = 'image/png';
+                        extension = 'bmp';
+                        quality = undefined;
+                        break;
+                }
+
+                // 画像データを生成
+                const dataUrl = canvas.toDataURL(mimeType, quality);
+                downloadLink.href = dataUrl;
+                downloadLink.download = `converted.${extension}`;
+                downloadLink.style.display = 'inline';
+                downloadLink.textContent = `Download ${extension.toUpperCase()}`;
             };
 
             img.src = URL.createObjectURL(input.files[0]);

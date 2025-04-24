@@ -28,6 +28,12 @@
         h2 {
             margin-top: 0;
         }
+        pre {
+            text-align: left;
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -63,56 +69,35 @@
         <a id="multiDownloadLink" style="display: none;">Download Converted Image</a>
     </div>
 
+    <!-- API変換セクション -->
+    <div class="section">
+        <h2>API Image Converter</h2>
+        <p>Use the JavaScript API below to convert images programmatically.</p>
+        <input type="file" id="apiImageInput" accept="image/png,image/jpeg,image/webp,image/bmp">
+        <br>
+        <label for="apiOutputFormat">Output Format: </label>
+        <select id="apiOutputFormat">
+            <option value="image/jpeg">JPG</option>
+            <option value="image/png">PNG</option>
+            <option value="image/webp">WEBP</option>
+            <option value="image/bmp">BMP</option>
+        </select>
+        <br>
+        <label><input type="checkbox" id="keepFilenameApi"> Keep original filename</label>
+        <br>
+        <button onclick="testApi()">Test API</button>
+        <br>
+        <a id="apiDownloadLink" style="display: none;">Download Converted Image</a>
+        <h3>API Usage</h3>
+        <pre id="apiUsage"></pre>
+    </div>
+
     <canvas id="canvas"></canvas>
 
     <script>
-        // PNG to JPG変換
-        function convertPngToJpg() {
-            const input = document.getElementById('imageInput');
-            const keepFilename = document.getElementById('keepFilenamePng').checked;
+        // 共通の変換ロジック
+        function convertImage(file, outputFormat, keepFilename, callback) {
             const canvas = document.getElementById('canvas');
-            const downloadLink = document.getElementById('downloadLink');
-
-            if (!input.files[0]) {
-                alert('Please select a PNG image.');
-                return;
-            }
-
-            const img = new Image();
-            img.onload = function() {
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                
-                const jpgDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-                downloadLink.href = jpgDataUrl;
-                
-                // ファイル名設定
-                const filename = keepFilename 
-                    ? input.files[0].name.replace(/\.[^/.]+$/, '') + '.jpg'
-                    : 'converted.jpg';
-                downloadLink.download = filename;
-                downloadLink.style.display = 'inline';
-                downloadLink.textContent = `Download ${filename}`;
-            };
-
-            img.src = URL.createObjectURL(input.files[0]);
-        }
-
-        // 複数形式変換
-        function convertMultiFormat() {
-            const input = document.getElementById('multiImageInput');
-            const outputFormat = document.getElementById('outputFormat').value;
-            const keepFilename = document.getElementById('keepFilenameMulti').checked;
-            const canvas = document.getElementById('canvas');
-            const downloadLink = document.getElementById('multiDownloadLink');
-
-            if (!input.files[0]) {
-                alert('Please select an image.');
-                return;
-            }
-
             const img = new Image();
             img.onload = function() {
                 canvas.width = img.width;
@@ -120,7 +105,6 @@
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
 
-                // 出力形式に応じた拡張子と品質設定
                 let extension = '';
                 let mimeType = outputFormat;
                 let quality = 0.9;
@@ -143,21 +127,129 @@
                         break;
                 }
 
-                // 画像データを生成
                 const dataUrl = canvas.toDataURL(mimeType, quality);
-                downloadLink.href = dataUrl;
-
-                // ファイル名設定
                 const filename = keepFilename 
-                    ? input.files[0].name.replace(/\.[^/.]+$/, '') + '.' + extension
+                    ? file.name.replace(/\.[^/.]+$/, '') + '.' + extension
                     : `converted.${extension}`;
+                
+                callback({ dataUrl, filename });
+            };
+            img.src = URL.createObjectURL(file);
+        }
+
+        // PNG to JPG変換
+        function convertPngToJpg() {
+            const input = document.getElementById('imageInput');
+            const keepFilename = document.getElementById('keepFilenamePng').checked;
+            const downloadLink = document.getElementById('downloadLink');
+
+            if (!input.files[0]) {
+                alert('Please select a PNG image.');
+                return;
+            }
+
+            convertImage(input.files[0], 'image/jpeg', keepFilename, ({ dataUrl, filename }) => {
+                downloadLink.href = dataUrl;
                 downloadLink.download = filename;
                 downloadLink.style.display = 'inline';
                 downloadLink.textContent = `Download ${filename}`;
-            };
-
-            img.src = URL.createObjectURL(input.files[0]);
+            });
         }
+
+        // 複数形式変換
+        function convertMultiFormat() {
+            const input = document.getElementById('multiImageInput');
+            const outputFormat = document.getElementById('outputFormat').value;
+            const keepFilename = document.getElementById('keepFilenameMulti').checked;
+            const downloadLink = document.getElementById('multiDownloadLink');
+
+            if (!input.files[0]) {
+                alert('Please select an image.');
+                return;
+            }
+
+            convertImage(input.files[0], outputFormat, keepFilename, ({ dataUrl, filename }) => {
+                downloadLink.href = dataUrl;
+                downloadLink.download = filename;
+                downloadLink.style.display = 'inline';
+                downloadLink.textContent = `Download ${filename}`;
+            });
+        }
+
+        // APIテスト
+        function testApi() {
+            const input = document.getElementById('apiImageInput');
+            const outputFormat = document.getElementById('apiOutputFormat').value;
+            const keepFilename = document.getElementById('keepFilenameApi').checked;
+            const downloadLink = document.getElementById('apiDownloadLink');
+
+            if (!input.files[0]) {
+                alert('Please select an image.');
+                return;
+            }
+
+            window.imageConverter.convert(input.files[0], outputFormat, keepFilename, ({ dataUrl, filename }) => {
+                downloadLink.href = dataUrl;
+                downloadLink.download = filename;
+                downloadLink.style.display = 'inline';
+                downloadLink.textContent = `Download ${filename}`;
+            });
+        }
+
+        // API定義
+        window.imageConverter = {
+            convert: function(file, outputFormat, keepFilename, callback) {
+                if (!(file instanceof File)) {
+                    callback({ error: 'Invalid file input' });
+                    return;
+                }
+                if (!['image/jpeg', 'image/png', 'image/webp', 'image/bmp'].includes(outputFormat)) {
+                    callback({ error: 'Invalid output format' });
+                    return;
+                }
+                convertImage(file, outputFormat, keepFilename, callback);
+            }
+        };
+
+        // API使用方法の表示
+        document.getElementById('apiUsage').textContent = `
+JavaScript API Usage:
+
+// Load the API script (host on your GitHub Pages)
+<script src="https://username.github.io/image-converter/index.html"></script>
+
+// Convert an image
+const file = new File([/* file data */], "example.png", { type: "image/png" });
+window.imageConverter.convert(
+    file,                    // File object
+    "image/jpeg",           // Output format: image/jpeg, image/png, image/webp, image/bmp
+    true,                   // Keep original filename (boolean)
+    function(result) {      // Callback
+        if (result.error) {
+            console.error(result.error);
+            return;
+        }
+        // result.dataUrl: Data URL of converted image
+        // result.filename: Suggested filename
+        console.log("Converted:", result.filename, result.dataUrl);
+    }
+);
+
+// Example: Convert file from input element
+document.getElementById("myInput").addEventListener("change", function() {
+    const file = this.files[0];
+    window.imageConverter.convert(file, "image/webp", false, function(result) {
+        if (result.error) {
+            console.error(result.error);
+            return;
+        }
+        const link = document.createElement("a");
+        link.href = result.dataUrl;
+        link.download = result.filename;
+        link.click();
+    });
+});
+        `;
     </script>
 </body>
 </html>

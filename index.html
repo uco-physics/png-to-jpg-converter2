@@ -7,62 +7,166 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             text-align: center;
+            background-color: #f9f9f9;
         }
-        input, button, select, label {
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            background-color: #eee;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .tab-button.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: white;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        input[type="file"], button, select, label {
             margin: 10px;
-            padding: 5px;
+            padding: 8px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
         }
         canvas {
             display: none;
         }
-        .section {
-            margin: 40px 0;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+        .loading {
+            display: none;
+            margin: 10px;
+            font-style: italic;
+            color: #666;
         }
-        h2 {
-            margin-top: 0;
+        .loading.active {
+            display: block;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #eee;
+            height: 20px;
+            margin: 10px 0;
+            display: none;
+        }
+        .progress-bar.active {
+            display: block;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #007bff;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        /* レスポンシブデザイン */
+        @media (max-width: 768px) { /* iPadやタブレット */
+            .container {
+                padding: 10px;
+            }
+            .tab-button {
+                flex: 1;
+                font-size: 14px;
+                padding: 8px;
+            }
+            input[type="file"], button, select {
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
+        @media (max-width: 480px) { /* スマートフォン */
+            body {
+                padding: 10px;
+            }
+            .tabs {
+                flex-direction: column;
+            }
+            .tab-button {
+                margin-bottom: 5px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- PNG to JPGコンバーター（JPEGサポートを追加） -->
-    <div class="section">
-        <h2>PNG/JPEG to JPG Converter</h2>
-        <input type="file" id="imageInput" accept="image/png,image/jpeg">
-        <br>
-        <label><input type="checkbox" id="keepFilenamePng"> Keep original filename</label>
-        <br>
-        <button onclick="convertToJpg()">Convert to JPG</button>
-        <br>
-        <a id="downloadLink" style="display: none;">Download JPG</a>
-    </div>
+    <div class="container">
+        <h1>Image Converter</h1>
+        <div class="tabs">
+            <button class="tab-button active" data-tab="simple">Simple Converter</button>
+            <button class="tab-button" data-tab="advanced">Advanced Converter</button>
+        </div>
 
-    <!-- 複数形式変換セクション（GIFとAVIFを追加） -->
-    <div class="section">
-        <h2>Multi-Format Image Converter</h2>
-        <input type="file" id="multiImageInput" accept="image/png,image/jpeg,image/webp,image/bmp,image/gif,image/avif">
-        <br>
-        <label for="outputFormat">Output Format: </label>
-        <select id="outputFormat">
-            <option value="image/jpeg">JPG</option>
-            <option value="image/png">PNG</option>
-            <option value="image/webp">WEBP</option>
-            <option value="image/bmp">BMP</option>
-            <option value="image/gif">GIF</option>
-            <option value="image/avif">AVIF</option>
-        </select>
-        <br>
-        <label><input type="checkbox" id="keepFilenameMulti"> Keep original filename</label>
-        <br>
-        <button onclick="convertMultiFormat()">Convert Image</button>
-        <br>
-        <a id="multiDownloadLink" style="display: none;">Download Converted Image</a>
+        <!-- Simple Converter (PNG/JPEG to JPG) -->
+        <div id="simple" class="tab-content active">
+            <h2>PNG/JPEG to JPG Converter</h2>
+            <input type="file" id="imageInput" accept="image/png,image/jpeg">
+            <br>
+            <label><input type="checkbox" id="keepFilenameSimple"> Keep original filename</label>
+            <br>
+            <button id="convertSimpleBtn" onclick="convertToJpg()">Convert to JPG</button>
+            <div id="loadingSimple" class="loading">Converting...</div>
+            <div id="progressSimple" class="progress-bar">
+                <div class="progress-fill" id="progressFillSimple"></div>
+            </div>
+            <br>
+            <a id="downloadLinkSimple" style="display: none;">Download JPG</a>
+        </div>
+
+        <!-- Advanced Converter (Multi-Format) -->
+        <div id="advanced" class="tab-content">
+            <h2>Multi-Format Image Converter</h2>
+            <input type="file" id="multiImageInput" accept="image/png,image/jpeg,image/webp,image/bmp,image/gif,image/avif">
+            <br>
+            <label for="outputFormat">Output Format: </label>
+            <select id="outputFormat">
+                <option value="image/jpeg">JPG</option>
+                <option value="image/png">PNG</option>
+                <option value="image/webp">WEBP</option>
+                <option value="image/bmp">BMP</option>
+                <option value="image/gif">GIF</option>
+                <option value="image/avif">AVIF</option>
+            </select>
+            <br>
+            <label><input type="checkbox" id="keepFilenameAdvanced"> Keep original filename</label>
+            <br>
+            <button id="convertAdvancedBtn" onclick="convertMultiFormat()">Convert Image</button>
+            <div id="loadingAdvanced" class="loading">Converting...</div>
+            <div id="progressAdvanced" class="progress-bar">
+                <div class="progress-fill" id="progressFillAdvanced"></div>
+            </div>
+            <br>
+            <a id="downloadLinkAdvanced" style="display: none;">Download Converted Image</a>
+        </div>
     </div>
 
     <canvas id="canvas"></canvas>
@@ -70,7 +174,20 @@
     <script>
         let hasUnsavedChanges = false;
 
-        // 状態変更を検知してフラグを立てる
+        // タブ切り替え機能
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                button.classList.add('active');
+                document.getElementById(button.dataset.tab).classList.add('active');
+            });
+        });
+
+        // 状態変更監視
         function monitorChanges() {
             const inputs = document.querySelectorAll('input[type="file"], input[type="checkbox"], select');
             inputs.forEach(input => {
@@ -80,69 +197,104 @@
             });
         }
 
-        // リロード時に確認ダイアログを表示
+        // リロード確認
         window.addEventListener('beforeunload', (event) => {
             if (hasUnsavedChanges) {
                 event.preventDefault();
-                event.returnValue = ''; // ブラウザが確認ダイアログを表示
+                event.returnValue = '';
             }
         });
 
-        // ダウンロード後にフラグをリセット（オプション：変換完了後に呼び出し）
+        // 進行状況リセット
         function resetUnsavedChanges() {
             hasUnsavedChanges = false;
         }
 
-        // PNG/JPEG to JPG変換
+        // プログレス更新（シミュレーション用）
+        function simulateProgress(progressElement, callback) {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 20;
+                progressElement.style.width = `${progress}%`;
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    callback();
+                }
+            }, 200); // シンプルなシミュレーション、実際の処理に合わせて調整
+        }
+
+        // Simple Converter
         function convertToJpg() {
             const input = document.getElementById('imageInput');
-            const keepFilename = document.getElementById('keepFilenamePng').checked;
+            const keepFilename = document.getElementById('keepFilenameSimple').checked;
             const canvas = document.getElementById('canvas');
-            const downloadLink = document.getElementById('downloadLink');
+            const downloadLink = document.getElementById('downloadLinkSimple');
+            const loading = document.getElementById('loadingSimple');
+            const progressBar = document.getElementById('progressSimple');
+            const progressFill = document.getElementById('progressFillSimple');
+            const button = document.getElementById('convertSimpleBtn');
 
             if (!input.files[0]) {
                 alert('Please select a PNG or JPEG image.');
                 return;
             }
 
+            button.disabled = true;
+            loading.classList.add('active');
+            progressBar.classList.add('active');
+            progressFill.style.width = '0%';
+
             const img = new Image();
             img.onload = function() {
                 canvas.width = img.width;
                 canvas.height = img.height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
-                
-                const jpgDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-                downloadLink.href = jpgDataUrl;
-                
-                // ファイル名設定
-                const filename = keepFilename 
-                    ? input.files[0].name.replace(/\.[^/.]+$/, '') + '.jpg'
-                    : 'converted.jpg';
-                downloadLink.download = filename;
-                downloadLink.style.display = 'inline';
-                downloadLink.textContent = `Download ${filename}`;
 
-                // 変換完了後にフラグをリセット
-                resetUnsavedChanges();
+                // プログレスシミュレーション（実際の変換は速いが、大きな画像用）
+                simulateProgress(progressFill, () => {
+                    const jpgDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                    downloadLink.href = jpgDataUrl;
+
+                    const filename = keepFilename 
+                        ? input.files[0].name.replace(/\.[^/.]+$/, '') + '.jpg'
+                        : 'converted.jpg';
+                    downloadLink.download = filename;
+                    downloadLink.style.display = 'inline';
+                    downloadLink.textContent = `Download ${filename}`;
+
+                    button.disabled = false;
+                    loading.classList.remove('active');
+                    progressBar.classList.remove('active');
+                    resetUnsavedChanges();
+                });
             };
 
             img.src = URL.createObjectURL(input.files[0]);
         }
 
-        // 複数形式変換
+        // Advanced Converter
         function convertMultiFormat() {
             const input = document.getElementById('multiImageInput');
             const outputFormat = document.getElementById('outputFormat').value;
-            const keepFilename = document.getElementById('keepFilenameMulti').checked;
+            const keepFilename = document.getElementById('keepFilenameAdvanced').checked;
             const canvas = document.getElementById('canvas');
-            const downloadLink = document.getElementById('multiDownloadLink');
+            const downloadLink = document.getElementById('downloadLinkAdvanced');
+            const loading = document.getElementById('loadingAdvanced');
+            const progressBar = document.getElementById('progressAdvanced');
+            const progressFill = document.getElementById('progressFillAdvanced');
+            const button = document.getElementById('convertAdvancedBtn');
 
             if (!input.files[0]) {
                 alert('Please select an image.');
                 return;
             }
 
+            button.disabled = true;
+            loading.classList.add('active');
+            progressBar.classList.add('active');
+            progressFill.style.width = '0%';
+
             const img = new Image();
             img.onload = function() {
                 canvas.width = img.width;
@@ -150,7 +302,6 @@
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
 
-                // 出力形式に応じた拡張子と品質設定
                 let extension = '';
                 let mimeType = outputFormat;
                 let quality = 0.9;
@@ -167,35 +318,38 @@
                         extension = 'webp';
                         break;
                     case 'image/bmp':
-                        mimeType = 'image/png'; // BMPはCanvasで直接サポートされないためPNGとして出力
+                        mimeType = 'image/png';
                         extension = 'bmp';
                         quality = undefined;
                         break;
                     case 'image/gif':
-                        mimeType = 'image/png'; // GIFはCanvasで直接サポートされないためPNGとして出力（アニメーションは失われる）
+                        mimeType = 'image/png';
                         extension = 'gif';
                         quality = undefined;
                         break;
                     case 'image/avif':
                         extension = 'avif';
-                        quality = 0.8; // AVIFサポートはブラウザ依存
+                        quality = 0.8;
                         break;
                 }
 
-                // 画像データを生成
-                const dataUrl = canvas.toDataURL(mimeType, quality);
-                downloadLink.href = dataUrl;
+                // プログレスシミュレーション
+                simulateProgress(progressFill, () => {
+                    const dataUrl = canvas.toDataURL(mimeType, quality);
+                    downloadLink.href = dataUrl;
 
-                // ファイル名設定
-                const filename = keepFilename 
-                    ? input.files[0].name.replace(/\.[^/.]+$/, '') + '.' + extension
-                    : `converted.${extension}`;
-                downloadLink.download = filename;
-                downloadLink.style.display = 'inline';
-                downloadLink.textContent = `Download ${filename}`;
+                    const filename = keepFilename 
+                        ? input.files[0].name.replace(/\.[^/.]+$/, '') + '.' + extension
+                        : `converted.${extension}`;
+                    downloadLink.download = filename;
+                    downloadLink.style.display = 'inline';
+                    downloadLink.textContent = `Download ${filename}`;
 
-                // 変換完了後にフラグをリセット
-                resetUnsavedChanges();
+                    button.disabled = false;
+                    loading.classList.remove('active');
+                    progressBar.classList.remove('active');
+                    resetUnsavedChanges();
+                });
             };
 
             img.src = URL.createObjectURL(input.files[0]);

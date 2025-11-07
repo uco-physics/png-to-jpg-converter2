@@ -31,22 +31,22 @@
     </style>
 </head>
 <body>
-    <!-- PNG to JPGコンバーター -->
+    <!-- PNG to JPGコンバーター（JPEGサポートを追加） -->
     <div class="section">
-        <h2>PNG to JPG Converter</h2>
-        <input type="file" id="imageInput" accept="image/png">
+        <h2>PNG/JPEG to JPG Converter</h2>
+        <input type="file" id="imageInput" accept="image/png,image/jpeg">
         <br>
         <label><input type="checkbox" id="keepFilenamePng"> Keep original filename</label>
         <br>
-        <button onclick="convertPngToJpg()">Convert to JPG</button>
+        <button onclick="convertToJpg()">Convert to JPG</button>
         <br>
         <a id="downloadLink" style="display: none;">Download JPG</a>
     </div>
 
-    <!-- 複数形式変換セクション -->
+    <!-- 複数形式変換セクション（GIFとAVIFを追加） -->
     <div class="section">
         <h2>Multi-Format Image Converter</h2>
-        <input type="file" id="multiImageInput" accept="image/png,image/jpeg,image/webp,image/bmp">
+        <input type="file" id="multiImageInput" accept="image/png,image/jpeg,image/webp,image/bmp,image/gif,image/avif">
         <br>
         <label for="outputFormat">Output Format: </label>
         <select id="outputFormat">
@@ -54,6 +54,8 @@
             <option value="image/png">PNG</option>
             <option value="image/webp">WEBP</option>
             <option value="image/bmp">BMP</option>
+            <option value="image/gif">GIF</option>
+            <option value="image/avif">AVIF</option>
         </select>
         <br>
         <label><input type="checkbox" id="keepFilenameMulti"> Keep original filename</label>
@@ -66,15 +68,40 @@
     <canvas id="canvas"></canvas>
 
     <script>
-        // PNG to JPG変換
-        function convertPngToJpg() {
+        let hasUnsavedChanges = false;
+
+        // 状態変更を検知してフラグを立てる
+        function monitorChanges() {
+            const inputs = document.querySelectorAll('input[type="file"], input[type="checkbox"], select');
+            inputs.forEach(input => {
+                input.addEventListener('change', () => {
+                    hasUnsavedChanges = true;
+                });
+            });
+        }
+
+        // リロード時に確認ダイアログを表示
+        window.addEventListener('beforeunload', (event) => {
+            if (hasUnsavedChanges) {
+                event.preventDefault();
+                event.returnValue = ''; // ブラウザが確認ダイアログを表示
+            }
+        });
+
+        // ダウンロード後にフラグをリセット（オプション：変換完了後に呼び出し）
+        function resetUnsavedChanges() {
+            hasUnsavedChanges = false;
+        }
+
+        // PNG/JPEG to JPG変換
+        function convertToJpg() {
             const input = document.getElementById('imageInput');
             const keepFilename = document.getElementById('keepFilenamePng').checked;
             const canvas = document.getElementById('canvas');
             const downloadLink = document.getElementById('downloadLink');
 
             if (!input.files[0]) {
-                alert('Please select a PNG image.');
+                alert('Please select a PNG or JPEG image.');
                 return;
             }
 
@@ -95,6 +122,9 @@
                 downloadLink.download = filename;
                 downloadLink.style.display = 'inline';
                 downloadLink.textContent = `Download ${filename}`;
+
+                // 変換完了後にフラグをリセット
+                resetUnsavedChanges();
             };
 
             img.src = URL.createObjectURL(input.files[0]);
@@ -137,9 +167,18 @@
                         extension = 'webp';
                         break;
                     case 'image/bmp':
-                        mimeType = 'image/png';
+                        mimeType = 'image/png'; // BMPはCanvasで直接サポートされないためPNGとして出力
                         extension = 'bmp';
                         quality = undefined;
+                        break;
+                    case 'image/gif':
+                        mimeType = 'image/png'; // GIFはCanvasで直接サポートされないためPNGとして出力（アニメーションは失われる）
+                        extension = 'gif';
+                        quality = undefined;
+                        break;
+                    case 'image/avif':
+                        extension = 'avif';
+                        quality = 0.8; // AVIFサポートはブラウザ依存
                         break;
                 }
 
@@ -154,10 +193,16 @@
                 downloadLink.download = filename;
                 downloadLink.style.display = 'inline';
                 downloadLink.textContent = `Download ${filename}`;
+
+                // 変換完了後にフラグをリセット
+                resetUnsavedChanges();
             };
 
             img.src = URL.createObjectURL(input.files[0]);
         }
+
+        // 初期化
+        monitorChanges();
     </script>
 </body>
 </html>
